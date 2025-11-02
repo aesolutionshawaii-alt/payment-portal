@@ -5,8 +5,8 @@ const configuration = new Configuration({
   basePath: PlaidEnvironments[process.env.NEXT_PUBLIC_PLAID_ENV as 'sandbox' | 'production'],
   baseOptions: {
     headers: {
-      'PLAID-CLIENT-ID': process.env.PLAID_CLIENT_ID,
-      'PLAID-SECRET': process.env.PLAID_SECRET,
+      'PLAID-CLIENT-ID': process.env.PLAID_CLIENT_ID!,
+      'PLAID-SECRET': process.env.PLAID_SECRET!,
     },
   },
 })
@@ -21,11 +21,12 @@ export async function GET() {
       products: [Products.Auth],
       country_codes: [CountryCode.Us],
       language: 'en',
+      redirect_uri: process.env.NEXT_PUBLIC_APP_URL,
     })
 
     return NextResponse.json({ link_token: response.data.link_token })
-  } catch (error) {
-    console.error('Error creating link token:', error)
+  } catch (error: any) {
+    console.error('Error creating link token:', error.response?.data || error)
     return NextResponse.json(
       { error: 'Failed to create link token' },
       { status: 500 }
