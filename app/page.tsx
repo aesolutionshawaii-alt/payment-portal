@@ -27,7 +27,7 @@ export default function Home() {
         <div className="text-center mb-12">
           <div className="flex justify-center mb-6">
             <Image 
-              src="/logo.png" 
+              src="/ahitrooper_white1.png"
               alt="Tsutomu" 
               width={300} 
               height={100}
@@ -37,7 +37,7 @@ export default function Home() {
           <div className="h-px bg-gradient-to-r from-transparent via-white/20 to-transparent mb-6"></div>
           <p className="text-gray-400 text-sm uppercase tracking-widest">Payment Portal</p>
         </div>
-
+<p className="text-gray-500 text-xs mt-2">Powered by High Seas Hawaii Media Group Inc</p>
         {/* Main Card */}
         <div className="max-w-2xl mx-auto">
           <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 shadow-2xl overflow-hidden">
