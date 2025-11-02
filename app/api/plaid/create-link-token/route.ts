@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 import { Configuration, PlaidApi, PlaidEnvironments, Products, CountryCode } from 'plaid'
 
 const configuration = new Configuration({
-  basePath: PlaidEnvironments[process.env.NEXT_PUBLIC_PLAID_ENV as 'sandbox' | 'production'],
+  basePath: PlaidEnvironments.sandbox,
   baseOptions: {
     headers: {
       'PLAID-CLIENT-ID': process.env.PLAID_CLIENT_ID!,
