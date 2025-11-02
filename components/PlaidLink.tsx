@@ -11,7 +11,6 @@ export default function PlaidLink({ onSuccess }: PlaidLinkProps) {
   const [linkToken, setLinkToken] = useState<string | null>(null)
 
   useEffect(() => {
-    // Get link token from API
     fetch('/api/plaid/create-link-token')
       .then(res => res.json())
       .then(data => setLinkToken(data.link_token))
@@ -20,7 +19,6 @@ export default function PlaidLink({ onSuccess }: PlaidLinkProps) {
   const { open, ready } = usePlaidLink({
     token: linkToken,
     onSuccess: (public_token) => {
-      // Exchange public token for access token
       fetch('/api/plaid/exchange-token', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -37,9 +35,15 @@ export default function PlaidLink({ onSuccess }: PlaidLinkProps) {
     <button
       onClick={() => open()}
       disabled={!ready}
-      className="bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+      className="group relative px-12 py-4 bg-white text-black font-semibold rounded-xl overflow-hidden transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
     >
-      Link Bank Account
+      <div className="absolute inset-0 bg-gradient-to-r from-gray-100 to-white opacity-0 group-hover:opacity-100 transition-opacity"></div>
+      <span className="relative flex items-center gap-3">
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+        </svg>
+        Link Bank Account
+      </span>
     </button>
   )
 }
