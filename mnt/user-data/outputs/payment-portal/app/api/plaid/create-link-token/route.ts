@@ -1,0 +1,34 @@
+import { NextResponse } from 'next/server'
+import { Configuration, PlaidApi, PlaidEnvironments, Products, CountryCode } from 'plaid'
+
+const configuration = new Configuration({
+  basePath: PlaidEnvironments[process.env.NEXT_PUBLIC_PLAID_ENV as 'sandbox' | 'production'],
+  baseOptions: {
+    headers: {
+      'PLAID-CLIENT-ID': process.env.PLAID_CLIENT_ID,
+      'PLAID-SECRET': process.env.PLAID_SECRET,
+    },
+  },
+})
+
+const plaidClient = new PlaidApi(configuration)
+
+export async function GET() {
+  try {
+    const response = await plaidClient.linkTokenCreate({
+      user: { client_user_id: 'user-1' },
+      client_name: 'Payment Portal',
+      products: [Products.Auth],
+      country_codes: [CountryCode.Us],
+      language: 'en',
+    })
+
+    return NextResponse.json({ link_token: response.data.link_token })
+  } catch (error) {
+    console.error('Error creating link token:', error)
+    return NextResponse.json(
+      { error: 'Failed to create link token' },
+      { status: 500 }
+    )
+  }
+}
