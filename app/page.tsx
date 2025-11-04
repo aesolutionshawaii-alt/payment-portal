@@ -1,37 +1,41 @@
-'use client'
+use client'
 
-import { useState } from 'react'
-import PlaidLink from '@/components/PlaidLink'
+import { useState, useEffect } from 'react'
+import Image from 'next/image'
 import PaymentForm from '@/components/PaymentForm'
 import PaymentHistory from '@/components/PaymentHistory'
-import Image from 'next/image'
+import PlaidLink from '@/components/PlaidLink'
 
 export default function Home() {
   const [bankLinked, setBankLinked] = useState(false)
-  const [plaidToken, setPlaidToken] = useState('')
-  const [refreshHistory, setRefreshHistory] = useState(0)
+  const [accessToken, setAccessToken] = useState('')
+  const [paymentMethod, setPaymentMethod] = useState<'bank' | 'card'>('bank')
 
-  const handleBankLinked = (publicToken: string) => {
+  useEffect(() => {
+    const token = localStorage.getItem('plaid_access_token')
+    if (token) {
+      setAccessToken(token)
+      setBankLinked(true)
+    }
+  }, [])
+
+  const handleBankLinked = (token: string) => {
+    localStorage.setItem('plaid_access_token', token)
+    setAccessToken(token)
     setBankLinked(true)
-    setPlaidToken(publicToken)
-  }
-
-  const handlePaymentComplete = () => {
-    setRefreshHistory(prev => prev + 1)
   }
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900">
-      <div className="container mx-auto px-4 py-12">
-        {/* Header */}
+      <div className="container mx-auto px-4 py-8 md:py-16">
         <div className="text-center mb-12">
           <div className="flex justify-center mb-6">
-            <Image 
+            <Image
               src="/ahitrooper_white1.png"
-              alt="Tsutomu" 
-              width={300} 
-              height={100}
-              className="opacity-90"
+              alt="Logo"
+              width={200}
+              height={80}
+              priority
             />
           </div>
           <p className="text-gray-500 text-xs mt-2">Powered by High Seas Hawaii Media Group Inc</p>
@@ -43,7 +47,7 @@ export default function Home() {
         <div className="max-w-2xl mx-auto">
           <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 shadow-2xl overflow-hidden">
             <div className="p-8 md:p-12">
-              {!bankLinked ? (
+              {!bankLinked && paymentMethod === 'bank' ? (
                 <div className="text-center py-12">
                   <h2 className="text-2xl font-light text-white mb-4">First Time Setup</h2>
                   <p className="text-gray-400 mb-12 max-w-md mx-auto">
@@ -53,27 +57,58 @@ export default function Home() {
                 </div>
               ) : (
                 <>
-                  <PaymentForm 
-                    plaidToken={plaidToken} 
-                    onPaymentComplete={handlePaymentComplete}
-                  />
+                  <h2 className="text-2xl font-light text-white mb-8">Send Payment</h2>
                   
-                  <div className="mt-12 pt-8 border-t border-white/10">
-                    <PaymentHistory key={refreshHistory} />
+                  {/* Payment Method Toggle */}
+                  <div className="mb-8">
+                    <div className="flex gap-4 p-1 bg-white/5 rounded-lg">
+                      <button
+                        onClick={() => setPaymentMethod('bank')}
+                        className={`flex-1 py-3 px-4 rounded-md transition-all ${
+                          paymentMethod === 'bank'
+                            ? 'bg-white text-black font-medium'
+                            : 'text-gray-400 hover:text-white'
+                        }`}
+                      >
+                        🏦 Bank Account (0.8% fee)
+                      </button>
+                      <button
+                        onClick={() => setPaymentMethod('card')}
+                        className={`flex-1 py-3 px-4 rounded-md transition-all ${
+                          paymentMethod === 'card'
+                            ? 'bg-white text-black font-medium'
+                            : 'text-gray-400 hover:text-white'
+                        }`}
+                      >
+                        💳 Credit Card (2.9% + $0.30)
+                      </button>
+                    </div>
                   </div>
+
+                  {paymentMethod === 'bank' && !bankLinked && (
+                    <div className="mb-8 p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                      <p className="text-blue-400 text-sm mb-4">Link your bank account to pay with ACH</p>
+                      <PlaidLink onSuccess={handleBankLinked} />
+                    </div>
+                  )}
+
+                  <PaymentForm 
+                    plaidToken={accessToken} 
+                    paymentMethod={paymentMethod}
+                  />
                 </>
               )}
             </div>
           </div>
 
-          {/* Footer */}
-          <div className="text-center mt-8">
-            <p className="text-gray-500 text-xs">
-              Secured by Plaid & Dwolla • All transactions encrypted
-            </p>
+          <PaymentHistory />
+
+          <div className="text-center mt-8 text-gray-500 text-sm">
+            Secured by Plaid & Stripe • All transactions encrypted
           </div>
         </div>
       </div>
     </main>
   )
 }
+
