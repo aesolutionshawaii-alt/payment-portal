@@ -71,11 +71,24 @@ export async function POST(request: NextRequest) {
     }
 
     // Step 4: Attach bank account to customer
-    const bankAccount = await stripe.customers.createSource(customerId, {
-      source: bankAccountToken,
+let bankAccount
+try {
+  bankAccount = await stripe.customers.createSource(customerId, {
+    source: bankAccountToken,
+  })
+  console.log('Attached bank account to customer')
+} catch (error: any) {
+  if (error.code === 'bank_account_exists') {
+    // Get existing bank account
+    const sources = await stripe.customers.listSources(customerId, {
+      object: 'bank_account',
     })
-
-    console.log('Attached bank account to customer')
+    bankAccount = sources.data[0]
+    console.log('Using existing bank account')
+  } else {
+    throw error
+  }
+}
 
     
 
