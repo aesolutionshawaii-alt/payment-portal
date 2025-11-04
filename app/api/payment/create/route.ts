@@ -77,15 +77,7 @@ export async function POST(request: NextRequest) {
 
     console.log('Attached bank account to customer')
 
-    // Step 5: Verify bank account (in test mode, this is instant)
-    if (bankAccount.object === 'bank_account') {
-      await stripe.customers.verifySource(
-        customerId,
-        bankAccount.id,
-        { amounts: [32, 45] } // Test amounts for sandbox
-      )
-      console.log('Verified bank account')
-    }
+    
 
     // Step 6: Create ACH charge
     const charge = await stripe.charges.create({
