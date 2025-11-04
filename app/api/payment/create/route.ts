@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { Client } from 'dwolla-v2'
+import Stripe from 'stripe'
 import { Configuration, PlaidApi, PlaidEnvironments } from 'plaid'
 
-const dwolla = new Client({
-  key: process.env.DWOLLA_KEY!,
-  secret: process.env.DWOLLA_SECRET!,
-  environment: process.env.DWOLLA_ENVIRONMENT as 'sandbox' | 'production',
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  apiVersion: '2024-11-20.acacia',
 })
 
 const plaidConfig = new Configuration({
@@ -31,7 +29,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.log('Starting payment process for amount:', amount)
+    console.log('Starting Stripe ACH payment for amount:', amount)
 
     // Step 1: Get bank account details from Plaid
     const authResponse = await plaidClient.authGet({
@@ -44,107 +42,78 @@ export async function POST(request: NextRequest) {
 
     console.log('Retrieved bank account from Plaid')
 
-    // Step 2: Create or get Dwolla customer
-    let customerUrl: string
-    
-    try {
-      const customerResponse = await dwolla.post('customers', {
-        firstName: 'Tsutomu',
-        lastName: 'Client',
-        email: 'tsutomu@example.com',
-        type: 'receive-only',
-      })
-      customerUrl = customerResponse.headers.get('location')!
-      console.log('Created Dwolla customer:', customerUrl)
-    } catch (error: any) {
-      // Customer might already exist
-      if (error.body?._embedded?.errors?.[0]?.code === 'duplicate') {
-        // Get existing customer
-        const customers = await dwolla.get('customers', {
-          search: 'tsutomu@example.com',
-        })
-        customerUrl = customers.body._embedded.customers[0]._links.self.href
-        console.log('Using existing Dwolla customer:', customerUrl)
-      } else {
-        throw error
-      }
-    }
-
-    // Step 3: Create funding source (bank account) for customer
-    const fundingSourceResponse = await dwolla.post(
-      `${customerUrl}/funding-sources`,
-      {
-        routingNumber: routingNumber,
-        accountNumber: accountNumber,
-        bankAccountType: 'checking',
-        name: account.name,
-      }
-    )
-    const sourceFundingSourceUrl = fundingSourceResponse.headers.get('location')!
-    console.log('Created funding source:', sourceFundingSourceUrl)
-
-    // Step 4: Get your Schwab funding source URL
-    // In production, you'd have this stored. For sandbox, we'll create it
-    let destinationFundingSourceUrl: string
-
-    try {
-      // Try to create your Schwab account as a funding source
-      const schwabResponse = await dwolla.post('funding-sources', {
-        routingNumber: '121202211',
-        accountNumber: '440050477254',
-        bankAccountType: 'checking',
-        name: 'Josh Schwab Account',
-      })
-      destinationFundingSourceUrl = schwabResponse.headers.get('location')!
-      console.log('Created destination funding source:', destinationFundingSourceUrl)
-    } catch (error: any) {
-      // If it already exists, get it
-      const fundingSources = await dwolla.get('funding-sources')
-      const schwabSource = fundingSources.body._embedded['funding-sources'].find(
-        (fs: any) => fs.name === 'Josh Schwab Account'
-      )
-      if (schwabSource) {
-        destinationFundingSourceUrl = schwabSource._links.self.href
-      } else {
-        throw new Error('Could not find or create destination funding source')
-      }
-    }
-
-    // Step 5: Create the transfer
-    const transferResponse = await dwolla.post('transfers', {
-      _links: {
-        source: {
-          href: sourceFundingSourceUrl,
-        },
-        destination: {
-          href: destinationFundingSourceUrl,
-        },
-      },
-      amount: {
-        currency: 'USD',
-        value: amount.toFixed(2),
-      },
+    // Step 2: Exchange Plaid token for Stripe bank account token
+    const stripeTokenResponse = await plaidClient.processorStripeBankAccountTokenCreate({
+      access_token: plaid_token,
+      account_id: account.account_id,
     })
 
-    const transferUrl = transferResponse.headers.get('location')!
-    const transferId = transferUrl.split('/').pop()
+    const bankAccountToken = stripeTokenResponse.data.stripe_bank_account_token
 
-    console.log('Transfer created:', transferUrl)
+    console.log('Got Stripe bank account token')
+
+    // Step 3: Create or get Stripe customer
+    let customerId: string
+    
+    const existingCustomers = await stripe.customers.list({
+      email: 'tsutomu@example.com',
+      limit: 1,
+    })
+
+    if (existingCustomers.data.length > 0) {
+      customerId = existingCustomers.data[0].id
+      console.log('Using existing customer:', customerId)
+    } else {
+      const customer = await stripe.customers.create({
+        email: 'tsutomu@example.com',
+        name: 'Tsutomu Client',
+      })
+      customerId = customer.id
+      console.log('Created new customer:', customerId)
+    }
+
+    // Step 4: Attach bank account to customer
+    const bankAccount = await stripe.customers.createSource(customerId, {
+      source: bankAccountToken,
+    })
+
+    console.log('Attached bank account to customer')
+
+    // Step 5: Verify bank account (in test mode, this is instant)
+    if (bankAccount.object === 'bank_account') {
+      await stripe.customers.verifySource(
+        customerId,
+        bankAccount.id,
+        { amounts: [32, 45] } // Test amounts for sandbox
+      )
+      console.log('Verified bank account')
+    }
+
+    // Step 6: Create ACH charge
+    const charge = await stripe.charges.create({
+      amount: Math.round(amount * 100), // Convert to cents
+      currency: 'usd',
+      customer: customerId,
+      source: bankAccount.id,
+      description: `Payment from Tsutomu - $${amount}`,
+    })
+
+    console.log('Charge created:', charge.id)
 
     return NextResponse.json({
       success: true,
-      transfer_id: transferId,
+      charge_id: charge.id,
       amount,
-      status: 'pending',
+      status: charge.status,
     })
   } catch (error: any) {
     console.error('Payment error:', error)
-    console.error('Error details:', error.body || error.message)
+    console.error('Error details:', error.message)
     
     return NextResponse.json(
       { 
         error: 'Payment failed',
-        details: error.body?._embedded?.errors || error.message 
+        details: error.message 
       },
       { status: 500 }
     )
