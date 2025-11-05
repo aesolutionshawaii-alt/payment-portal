@@ -91,9 +91,16 @@ function PaymentFormContent({ plaidToken, paymentMethod, onPaymentComplete }: Pa
 }
 
 export default function PaymentForm(props: PaymentFormProps) {
+  // set a default if it's missing
+  const method = props.paymentMethod ?? 'bank';
+
   return (
     <Elements stripe={stripePromise}>
-      <PaymentFormContent {...props} />
+      <PaymentFormContent
+        plaidToken={props.plaidToken}
+        paymentMethod={method}
+        onPaymentComplete={props.onPaymentComplete}
+      />
     </Elements>
-  )
+  );
 }
