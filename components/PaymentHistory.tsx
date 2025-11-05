@@ -21,8 +21,7 @@ export default function PaymentHistory() {
   setPayments(data.payments || [])
   setLoading(false)
 })
-        setPayments(data.payments || [])
-        setLoading(false)
+        
       })
       .catch(() => setLoading(false))
   }, [])
