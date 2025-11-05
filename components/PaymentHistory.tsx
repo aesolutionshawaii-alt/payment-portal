@@ -20,7 +20,7 @@ export default function PaymentHistory() {
   console.log('Payment data:', data.payments)
   setPayments(data.payments || [])
   setLoading(false)
-})
+
         
       })
       .catch(() => setLoading(false))
