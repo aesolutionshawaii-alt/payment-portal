@@ -62,8 +62,9 @@ export default function PaymentHistory() {
     currency: 'USD',
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  }).format(amount / 100)
+  }).format(amount)
 }
+
 
 
   const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0)
