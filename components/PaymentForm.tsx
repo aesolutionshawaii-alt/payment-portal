@@ -91,7 +91,7 @@ function PaymentFormContent({
             type="number"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
-            placeholder="1300"
+            placeholder=""
             step="0.01"
             min="0"
             className="w-full bg-white/10 border border-white/20 rounded-xl px-12 py-4 text-white text-xl placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white/50 transition-all"
