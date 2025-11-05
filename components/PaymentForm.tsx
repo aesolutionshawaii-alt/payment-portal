@@ -8,7 +8,8 @@ const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!
 
 interface PaymentFormProps {
   plaidToken: string
-  paymentMethod: 'bank' | 'card'
+  paymentMethod?: 'bank' | 'card'
+
   onPaymentComplete?: () => void  // ✅ added this line
 }
 
