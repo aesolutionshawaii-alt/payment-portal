@@ -92,10 +92,12 @@ export default function Home() {
                     </div>
                   )}
 
-                 <PaymentForm 
-  plaidToken={accessToken} 
-  paymentMethod={paymentMethod}
+                 <PaymentForm
+  plaidToken={plaidToken}
+  paymentMethod="bank" // or "card" depending on what you want to show
+  onPaymentComplete={handlePaymentComplete}
 />
+
                 </>
               )}
             </div>
