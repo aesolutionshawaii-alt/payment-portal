@@ -1,29 +1,31 @@
-'use client'
+'use client';
 
-import { useState, useEffect } from 'react'
-import Image from 'next/image'
-import PaymentForm from '@/components/PaymentForm'
-import PaymentHistory from '@/components/PaymentHistory'
-import PlaidLink from '@/components/PlaidLink'
+import Image from 'next/image';
+import { useEffect, useState } from 'react';
+import PaymentForm from '@/components/PaymentForm';
 
-export default function Home() {
-  const [bankLinked, setBankLinked] = useState(false)
-  const [accessToken, setAccessToken] = useState('')
-  const [paymentMethod, setPaymentMethod] = useState<'bank' | 'card'>('bank')
+export default function Page() {
+  const [paymentMethod, setPaymentMethod] = useState<'bank' | 'card'>('bank');
+  const [bankLinked, setBankLinked] = useState(false);
+  const [plaidToken, setPlaidToken] = useState<string>('');
 
   useEffect(() => {
-    const token = localStorage.getItem('plaid_access_token')
-    if (token) {
-      setAccessToken(token)
-      setBankLinked(true)
+    const saved = localStorage.getItem('plaid_access_token');
+    if (saved) {
+      setPlaidToken(saved);
+      setBankLinked(true);
     }
-  }, [])
+  }, []);
 
   const handleBankLinked = (token: string) => {
-    localStorage.setItem('plaid_access_token', token)
-    setAccessToken(token)
-    setBankLinked(true)
-  }
+    localStorage.setItem('plaid_access_token', token);
+    setPlaidToken(token);
+    setBankLinked(true);
+  };
+
+  const handlePaymentComplete = () => {
+    // TODO: toast/redirect/etc
+  };
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900">
@@ -38,80 +40,36 @@ export default function Home() {
               priority
             />
           </div>
-          <p className="text-gray-500 text-xs mt-2">Powered by High Seas Hawaii Media Group Inc</p>
-          <div className="h-px bg-gradient-to-r from-transparent via-white/20 to-transparent mb-6"></div>
-          <p className="text-gray-400 text-sm uppercase tracking-widest">Payment Portal</p>
+          <p className="text-gray-500 text-xs mt-2">
+            Powered by High Seas Hawaii Media Group Inc
+          </p>
+          <div className="h-px bg-gradient-to-r from-transparent via-white/20 to-transparent mb-6" />
+          <p className="text-gray-400 text-sm uppercase tracking-widest">
+            Payment Portal
+          </p>
         </div>
 
-        {/* Main Card */}
         <div className="max-w-2xl mx-auto">
-          <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 shadow-2xl overflow-hidden">
-            <div className="p-8 md:p-12">
-              {!bankLinked && paymentMethod === 'bank' ? (
-                <div className="text-center py-12">
-                  <h2 className="text-2xl font-light text-white mb-4">First Time Setup</h2>
-                  <p className="text-gray-400 mb-12 max-w-md mx-auto">
-                    Securely link your bank account to get started. This is a one-time setup that takes less than a minute.
-                  </p>
-                  <PlaidLink onSuccess={handleBankLinked} />
-                </div>
-              ) : (
-                <>
-                  <h2 className="text-2xl font-light text-white mb-8">Send Payment</h2>
-                  
-                  {/* Payment Method Toggle */}
-                  <div className="mb-8">
-                    <div className="flex gap-4 p-1 bg-white/5 rounded-lg">
-                      <button
-                        onClick={() => setPaymentMethod('bank')}
-                        className={`flex-1 py-3 px-4 rounded-md transition-all ${
-                          paymentMethod === 'bank'
-                            ? 'bg-white text-black font-medium'
-                            : 'text-gray-400 hover:text-white'
-                        }`}
-                      >
-                        🏦 Bank Account (0.8% fee)
-                      </button>
-                      <button
-                        onClick={() => setPaymentMethod('card')}
-                        className={`flex-1 py-3 px-4 rounded-md transition-all ${
-                          paymentMethod === 'card'
-                            ? 'bg-white text-black font-medium'
-                            : 'text-gray-400 hover:text-white'
-                        }`}
-                      >
-                        💳 Credit Card (2.9% + $0.30)
-                      </button>
-                    </div>
-                  </div>
-
-                  {paymentMethod === 'bank' && !bankLinked && (
-                    <div className="mb-8 p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-                      <p className="text-blue-400 text-sm mb-4">Link your bank account to pay with ACH</p>
-                      <PlaidLink onSuccess={handleBankLinked} />
-                    </div>
-                  )}
-
-                 <PaymentForm
-  plaidToken={plaidToken}
-  paymentMethod="bank" / or "card" depending on what you want to show
-  onPaymentComplete={handlePaymentComplete}
-/>
-
-                </>
-              )}
-            </div>
-          </div>
-
-          <PaymentHistory />
-
-          <div className="text-center mt-8 text-gray-500 text-sm">
-            Secured by Plaid & Stripe • All transactions encrypted
+          <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 shadow-2xl overflow-hidden p-8 md:p-12">
+            {!bankLinked && paymentMethod === 'bank' ? (
+              <div className="text-center py-12">
+                <h2 className="text-2xl font-light text-white mb-4">First Time Setup</h2>
+                <p className="text-gray-400 mb-12 max-w-md mx-auto">
+                  Securely link your bank account to get started. This is a one-time setup that
+                  takes less than a minute.
+                </p>
+                {/* Your Plaid Link button should call handleBankLinked(token) */}
+              </div>
+            ) : (
+              <PaymentForm
+                plaidToken={plaidToken}
+                paymentMethod={paymentMethod}
+                onPaymentComplete={handlePaymentComplete}
+              />
+            )}
           </div>
         </div>
       </div>
     </main>
-  )
+  );
 }
-
- 
