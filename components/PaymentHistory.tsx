@@ -17,6 +17,10 @@ export default function PaymentHistory() {
     fetch('/api/payment/history')
       .then(res => res.json())
       .then(data => {
+  console.log('Payment data:', data.payments)
+  setPayments(data.payments || [])
+  setLoading(false)
+})
         setPayments(data.payments || [])
         setLoading(false)
       })
