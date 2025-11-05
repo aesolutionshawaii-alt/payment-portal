@@ -6,14 +6,13 @@ import { Elements, CardElement, useStripe, useElements } from '@stripe/react-str
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
 
-interface PaymentFormProps {
+export interface PaymentFormProps {
   plaidToken: string
   paymentMethod?: 'bank' | 'card'
-
-  onPaymentComplete?: () => void  // ✅ added this line
+  onPaymentComplete?: () => void
 }
 
-function PaymentFormContent({ plaidToken, paymentMethod, onPaymentComplete }: PaymentFormProps) {
+function PaymentFormContent({ plaidToken, paymentMethod = 'bank', onPaymentComplete }: PaymentFormProps) {
   const [amount, setAmount] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -37,7 +36,6 @@ function PaymentFormContent({ plaidToken, paymentMethod, onPaymentComplete }: Pa
     try {
       if (paymentMethod === 'card') {
         if (!stripe || !elements) throw new Error('Stripe not loaded')
-
         const cardElement = elements.getElement(CardElement)
         if (!cardElement) throw new Error('Card element not found')
 
@@ -71,10 +69,7 @@ function PaymentFormContent({ plaidToken, paymentMethod, onPaymentComplete }: Pa
         setAmount('')
       }
 
-      // ✅ trigger callback when payment completes
       onPaymentComplete?.()
-
-      // Refresh payment history
       setTimeout(() => window.location.reload(), 1500)
     } catch (err: any) {
       setError(err.message || 'Something went wrong')
@@ -85,22 +80,64 @@ function PaymentFormContent({ plaidToken, paymentMethod, onPaymentComplete }: Pa
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      {/* (rest of your JSX unchanged) */}
-    </form>
-  )
-}
+      <div>
+        <label className="block text-gray-400 text-sm font-medium mb-3 uppercase tracking-wider">
+          Amount
+        </label>
+        <div className="relative">
+          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white text-xl">$</span>
+          <input
+            type="number"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            placeholder="1300"
+            step="0.01"
+            min="0"
+            className="w-full bg-white/10 border border-white/20 rounded-xl px-12 py-4 text-white text-xl placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white/50 transition-all"
+            required
+          />
+        </div>
+        <p className="text-gray-500 text-sm mt-2">Enter the amount you wish to send</p>
+      </div>
 
-export default function PaymentForm(props: PaymentFormProps) {
-  // set a default if it's missing
-  const method = props.paymentMethod ?? 'bank';
+      {paymentMethod === 'card' && (
+        <div>
+          <label className="block text-gray-400 text-sm font-medium mb-3 uppercase tracking-wider">
+            Card Details
+          </label>
+          <div className="bg-white/10 border border-white/20 rounded-xl px-4 py-4">
+            <CardElement
+              options={{
+                style: {
+                  base: {
+                    fontSize: '16px',
+                    color: '#ffffff',
+                    '::placeholder': { color: '#9ca3af' },
+                  },
+                  invalid: { color: '#ef4444' },
+                },
+              }}
+            />
+          </div>
+        </div>
+      )}
 
-  return (
-    <Elements stripe={stripePromise}>
-      <PaymentFormContent
-        plaidToken={props.plaidToken}
-        paymentMethod={method}
-        onPaymentComplete={props.onPaymentComplete}
-      />
-    </Elements>
-  );
-}
+      {error && (
+        <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl">
+          <p className="text-red-400 text-sm">{error}</p>
+        </div>
+      )}
+
+      {success && (
+        <div className="p-4 bg-green-500/10 border border-green-500/20 rounded-xl">
+          <p className="text-green-400 text-sm">Payment initiated successfully!</p>
+        </div>
+      )}
+
+      <button
+        type="submit"
+        disabled={loading || (paymentMethod === 'bank' && !plaidToken)}
+        className="w-full bg-white text-black font-medium py-4 px-6 rounded-xl hover:bg-gray-100 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+      >
+        {loa
+
