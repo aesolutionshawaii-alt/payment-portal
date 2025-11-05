@@ -73,10 +73,9 @@ setTimeout(() => window.location.reload(), 1500);
 
       setError(err.message || 'Something went wrong')
     } finally {
-      setLoading(false)
-    }
+          setLoading(false)
+  } // closes handleSubmit
   
-}}
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div>
