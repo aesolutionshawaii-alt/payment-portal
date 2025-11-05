@@ -13,7 +13,7 @@ export async function GET() {
 
     const payments = charges.data.map(charge => ({
       id: charge.id,
-      amount: (charge.amount / 100).toFixed(2),
+      amount: charge.amount / 100,
       date: new Date(charge.created * 1000).toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'short',
