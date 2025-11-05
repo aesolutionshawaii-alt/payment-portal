@@ -1,4 +1,4 @@
-'use client'
+''use client'
 
 import { useState } from 'react'
 import { loadStripe } from '@stripe/stripe-js'
@@ -12,7 +12,11 @@ export interface PaymentFormProps {
   onPaymentComplete?: () => void
 }
 
-function PaymentFormContent({ plaidToken, paymentMethod = 'bank', onPaymentComplete }: PaymentFormProps) {
+function PaymentFormContent({
+  plaidToken,
+  paymentMethod = 'bank',
+  onPaymentComplete,
+}: PaymentFormProps) {
   const [amount, setAmount] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -23,7 +27,6 @@ function PaymentFormContent({ plaidToken, paymentMethod = 'bank', onPaymentCompl
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-
     if (!amount || parseFloat(amount) <= 0) {
       setError('Please enter a valid amount')
       return
@@ -44,12 +47,11 @@ function PaymentFormContent({ plaidToken, paymentMethod = 'bank', onPaymentCompl
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ amount: parseFloat(amount) }),
         })
-
         const { clientSecret } = await response.json()
+
         const result = await stripe.confirmCardPayment(clientSecret, {
           payment_method: { card: cardElement },
         })
-
         if (result.error) throw new Error(result.error.message)
 
         setSuccess(true)
@@ -61,21 +63,22 @@ function PaymentFormContent({ plaidToken, paymentMethod = 'bank', onPaymentCompl
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ amount: parseFloat(amount), plaid_token: plaidToken }),
         })
-
         const data = await response.json()
         if (!response.ok) throw new Error(data.error || 'Payment failed')
 
         setSuccess(true)
         setAmount('')
       }
-onPaymentComplete?.();          // trigger callback safely
-setTimeout(() => window.location.reload(), 1500);
 
+      onPaymentComplete?.()
+      setTimeout(() => window.location.reload(), 1500)
+    } catch (err: any) {
       setError(err.message || 'Something went wrong')
     } finally {
-          setLoading(false)
-  } // closes handleSubmit
-  
+      setLoading(false)
+    }
+  }
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div>
@@ -137,5 +140,21 @@ setTimeout(() => window.location.reload(), 1500);
         disabled={loading || (paymentMethod === 'bank' && !plaidToken)}
         className="w-full bg-white text-black font-medium py-4 px-6 rounded-xl hover:bg-gray-100 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
       >
-        {loa
+        {loading ? 'Processing...' : 'Send Payment'}
+      </button>
+    </form>
+  )
+}
+
+export default function PaymentForm(props: PaymentFormProps) {
+  return (
+    <Elements stripe={stripePromise}>
+      <PaymentFormContent
+        plaidToken={props.plaidToken}
+        paymentMethod={props.paymentMethod ?? 'bank'}
+        onPaymentComplete={props.onPaymentComplete}
+      />
+    </Elements>
+  )
+}
 
