@@ -76,7 +76,7 @@ setTimeout(() => window.location.reload(), 1500);
       setLoading(false)
     }
   
-}
+}}
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div>
