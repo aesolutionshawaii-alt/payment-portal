@@ -76,7 +76,7 @@ function PaymentFormContent({ plaidToken, paymentMethod = 'bank', onPaymentCompl
     } finally {
       setLoading(false)
     }
-  }
+  
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
