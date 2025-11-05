@@ -68,10 +68,9 @@ function PaymentFormContent({ plaidToken, paymentMethod = 'bank', onPaymentCompl
         setSuccess(true)
         setAmount('')
       }
+onPaymentComplete?.();          // trigger callback safely
+setTimeout(() => window.location.reload(), 1500);
 
-      onPaymentComplete?.()
-      setTimeout(() => window.location.reload(), 1500)
-    } catch (err: any) {
       setError(err.message || 'Something went wrong')
     } finally {
       setLoading(false)
