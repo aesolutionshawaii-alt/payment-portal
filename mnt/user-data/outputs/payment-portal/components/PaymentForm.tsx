@@ -34,7 +34,9 @@ export default function PaymentForm({ plaidToken, onPaymentComplete }: PaymentFo
       if (response.ok) {
         setSuccess(true)
         setAmount('')
-        onPaymentComplete()
+        setTimeout(() => {
+  window.location.reload()
+}, 3000)
       } else {
         setError(data.error || 'Payment failed')
       }
