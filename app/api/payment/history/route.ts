@@ -11,9 +11,11 @@ export async function GET() {
       customer: await getCustomerId(),
     })
 
-    const payments = charges.data.map(charge => ({
+   const payments = charges.data
+  .filter(charge => charge.amount >= 1000) // Only show payments $10 or more (1000 cents)
+  .map(charge => ({
       id: charge.id,
-      amount: (charge.amount / 100).toFixed(2),
+      amount: charge.amount / 100,
       date: new Date(charge.created * 1000).toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'short',

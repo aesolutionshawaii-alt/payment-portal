@@ -6,23 +6,27 @@ import { Elements, CardElement, useStripe, useElements } from '@stripe/react-str
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
 
-interface PaymentFormProps {
+export interface PaymentFormProps {
   plaidToken: string
-  paymentMethod: 'bank' | 'card'
+  paymentMethod?: 'bank' | 'card'
+  onPaymentComplete?: () => void
 }
 
-function PaymentFormContent({ plaidToken, paymentMethod }: PaymentFormProps) {
+function PaymentFormContent({
+  plaidToken,
+  paymentMethod = 'bank',
+  onPaymentComplete,
+}: PaymentFormProps) {
   const [amount, setAmount] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
-  
+
   const stripe = useStripe()
   const elements = useElements()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
     if (!amount || parseFloat(amount) <= 0) {
       setError('Please enter a valid amount')
       return
@@ -34,64 +38,40 @@ function PaymentFormContent({ plaidToken, paymentMethod }: PaymentFormProps) {
 
     try {
       if (paymentMethod === 'card') {
-        // Credit card payment
-        if (!stripe || !elements) {
-          throw new Error('Stripe not loaded')
-        }
-
+        if (!stripe || !elements) throw new Error('Stripe not loaded')
         const cardElement = elements.getElement(CardElement)
-        if (!cardElement) {
-          throw new Error('Card element not found')
-        }
+        if (!cardElement) throw new Error('Card element not found')
 
-        // Create payment intent
         const response = await fetch('/api/payment/create-card-intent', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ amount: parseFloat(amount) }),
         })
-
         const { clientSecret } = await response.json()
 
-        // Confirm payment
         const result = await stripe.confirmCardPayment(clientSecret, {
-          payment_method: {
-            card: cardElement,
-          },
+          payment_method: { card: cardElement },
         })
-
-        if (result.error) {
-          throw new Error(result.error.message)
-        }
+        if (result.error) throw new Error(result.error.message)
 
         setSuccess(true)
         setAmount('')
         cardElement.clear()
       } else {
-        // Bank account payment (existing code)
         const response = await fetch('/api/payment/create', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            amount: parseFloat(amount),
-            plaid_token: plaidToken,
-          }),
+          body: JSON.stringify({ amount: parseFloat(amount), plaid_token: plaidToken }),
         })
-
         const data = await response.json()
-
-        if (!response.ok) {
-          throw new Error(data.error || 'Payment failed')
-        }
+        if (!response.ok) throw new Error(data.error || 'Payment failed')
 
         setSuccess(true)
         setAmount('')
       }
 
-      // Refresh payment history
-      setTimeout(() => {
-        window.location.reload()
-      }, 1500)
+      onPaymentComplete?.()
+      setTimeout(() => window.location.reload(), 1500)
     } catch (err: any) {
       setError(err.message || 'Something went wrong')
     } finally {
@@ -111,7 +91,7 @@ function PaymentFormContent({ plaidToken, paymentMethod }: PaymentFormProps) {
             type="number"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
-            placeholder="1300"
+            placeholder=""
             step="0.01"
             min="0"
             className="w-full bg-white/10 border border-white/20 rounded-xl px-12 py-4 text-white text-xl placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white/50 transition-all"
@@ -133,13 +113,9 @@ function PaymentFormContent({ plaidToken, paymentMethod }: PaymentFormProps) {
                   base: {
                     fontSize: '16px',
                     color: '#ffffff',
-                    '::placeholder': {
-                      color: '#9ca3af',
-                    },
+                    '::placeholder': { color: '#9ca3af' },
                   },
-                  invalid: {
-                    color: '#ef4444',
-                  },
+                  invalid: { color: '#ef4444' },
                 },
               }}
             />
@@ -173,7 +149,12 @@ function PaymentFormContent({ plaidToken, paymentMethod }: PaymentFormProps) {
 export default function PaymentForm(props: PaymentFormProps) {
   return (
     <Elements stripe={stripePromise}>
-      <PaymentFormContent {...props} />
+      <PaymentFormContent
+        plaidToken={props.plaidToken}
+        paymentMethod={props.paymentMethod ?? 'bank'}
+        onPaymentComplete={props.onPaymentComplete}
+      />
     </Elements>
   )
 }
+

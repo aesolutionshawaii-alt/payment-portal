@@ -92,10 +92,10 @@ export default function Home() {
                     </div>
                   )}
 
-                 <PaymentForm 
-  plaidToken={accessToken} 
-  paymentMethod={paymentMethod}
-/>
+                  <PaymentForm 
+                    plaidToken={accessToken} 
+                    paymentMethod={paymentMethod}
+                  />
                 </>
               )}
             </div>
@@ -111,5 +111,3 @@ export default function Home() {
     </main>
   )
 }
-
- 

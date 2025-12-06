@@ -17,8 +17,11 @@ export default function PaymentHistory() {
     fetch('/api/payment/history')
       .then(res => res.json())
       .then(data => {
-        setPayments(data.payments || [])
-        setLoading(false)
+  console.log('Payment data:', data.payments)
+  setPayments(data.payments || [])
+  setLoading(false)
+
+        
       })
       .catch(() => setLoading(false))
   }, [])
@@ -54,13 +57,15 @@ export default function PaymentHistory() {
   }
 
   const formatAmount = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(amount)
-  }
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(amount)
+}
+
+
 
   const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0)
 
