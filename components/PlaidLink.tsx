@@ -12,10 +12,24 @@ export default function PlaidLink({ onSuccess, receivedRedirectUri }: PlaidLinkP
   const [linkToken, setLinkToken] = useState<string | null>(null)
 
   useEffect(() => {
+    // If returning from OAuth, reuse the stored link token
+    if (receivedRedirectUri) {
+      const storedToken = localStorage.getItem('plaid_link_token')
+      if (storedToken) {
+        setLinkToken(storedToken)
+        return
+      }
+    }
+
+    // Otherwise, create a new link token
     fetch('/api/plaid/create-link-token')
       .then(res => res.json())
-      .then(data => setLinkToken(data.link_token))
-  }, [])
+      .then(data => {
+        // Store the link token for potential OAuth redirect
+        localStorage.setItem('plaid_link_token', data.link_token)
+        setLinkToken(data.link_token)
+      })
+  }, [receivedRedirectUri])
 
   const { open, ready } = usePlaidLink({
     token: linkToken,
@@ -29,6 +43,8 @@ export default function PlaidLink({ onSuccess, receivedRedirectUri }: PlaidLinkP
         .then(res => res.json())
         .then(data => {
           if (data.access_token) {
+            // Clean up the stored link token
+            localStorage.removeItem('plaid_link_token')
             onSuccess(data.access_token)
           } else {
             console.error('Token exchange failed:', data.error)
