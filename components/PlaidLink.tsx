@@ -17,13 +17,6 @@ export default function PlaidLink({ onSuccess, receivedRedirectUri }: PlaidLinkP
       .then(data => setLinkToken(data.link_token))
   }, [])
 
-  // Auto-open Plaid Link when returning from OAuth redirect
-  useEffect(() => {
-    if (receivedRedirectUri && ready) {
-      open()
-    }
-  }, [receivedRedirectUri, ready, open])
-
   const { open, ready } = usePlaidLink({
     token: linkToken,
     receivedRedirectUri: receivedRedirectUri || undefined,
@@ -48,6 +41,13 @@ export default function PlaidLink({ onSuccess, receivedRedirectUri }: PlaidLinkP
         })
     },
   })
+
+  // Auto-open Plaid Link when returning from OAuth redirect
+  useEffect(() => {
+    if (receivedRedirectUri && ready) {
+      open()
+    }
+  }, [receivedRedirectUri, ready, open])
 
   return (
     <button
