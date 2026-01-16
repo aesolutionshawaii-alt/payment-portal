@@ -5,9 +5,10 @@ import { useEffect, useState } from 'react'
 
 interface PlaidLinkProps {
   onSuccess: (publicToken: string) => void
+  receivedRedirectUri?: string | null
 }
 
-export default function PlaidLink({ onSuccess }: PlaidLinkProps) {
+export default function PlaidLink({ onSuccess, receivedRedirectUri }: PlaidLinkProps) {
   const [linkToken, setLinkToken] = useState<string | null>(null)
 
   useEffect(() => {
@@ -16,8 +17,16 @@ export default function PlaidLink({ onSuccess }: PlaidLinkProps) {
       .then(data => setLinkToken(data.link_token))
   }, [])
 
+  // Auto-open Plaid Link when returning from OAuth redirect
+  useEffect(() => {
+    if (receivedRedirectUri && ready) {
+      open()
+    }
+  }, [receivedRedirectUri, ready, open])
+
   const { open, ready } = usePlaidLink({
     token: linkToken,
+    receivedRedirectUri: receivedRedirectUri || undefined,
     onSuccess: (public_token) => {
       fetch('/api/plaid/exchange-token', {
         method: 'POST',

@@ -10,12 +10,22 @@ export default function Home() {
   const [bankLinked, setBankLinked] = useState(false)
   const [accessToken, setAccessToken] = useState('')
   const [paymentMethod, setPaymentMethod] = useState<'bank' | 'card'>('bank')
+  const [oauthRedirectUri, setOauthRedirectUri] = useState<string | null>(null)
 
   useEffect(() => {
     const token = localStorage.getItem('plaid_access_token')
     if (token) {
       setAccessToken(token)
       setBankLinked(true)
+    }
+
+    // Check for OAuth redirect (user returning from bank authentication)
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      if (params.get('oauth_state_id')) {
+        // User is returning from OAuth - capture the full URL
+        setOauthRedirectUri(window.location.href)
+      }
     }
   }, [])
 
@@ -53,7 +63,7 @@ export default function Home() {
                   <p className="text-gray-400 mb-12 max-w-md mx-auto">
                     Securely link your bank account to get started. This is a one-time setup that takes less than a minute.
                   </p>
-                  <PlaidLink onSuccess={handleBankLinked} />
+                  <PlaidLink onSuccess={handleBankLinked} receivedRedirectUri={oauthRedirectUri} />
                 </div>
               ) : (
                 <>
@@ -88,7 +98,7 @@ export default function Home() {
                   {paymentMethod === 'bank' && !bankLinked && (
                     <div className="mb-8 p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
                       <p className="text-blue-400 text-sm mb-4">Link your bank account to pay with ACH</p>
-                      <PlaidLink onSuccess={handleBankLinked} />
+                      <PlaidLink onSuccess={handleBankLinked} receivedRedirectUri={oauthRedirectUri} />
                     </div>
                   )}
 
