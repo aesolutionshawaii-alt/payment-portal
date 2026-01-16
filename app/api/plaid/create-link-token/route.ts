@@ -1,6 +1,6 @@
 export const runtime = 'nodejs';
 import { NextResponse } from 'next/server'
-import { Configuration, PlaidApi, PlaidEnvironments, Products, CountryCode } from 'plaid'
+import { Configuration, PlaidApi, PlaidEnvironments, Products, CountryCode, DepositoryAccountSubtype } from 'plaid'
 
 const configuration = new Configuration({
   basePath: PlaidEnvironments[process.env.NEXT_PUBLIC_PLAID_ENV as 'sandbox' | 'production'],
@@ -25,7 +25,7 @@ export async function GET() {
       redirect_uri: process.env.NEXT_PUBLIC_APP_URL,
       account_filters: {
         depository: {
-          account_subtypes: ['checking', 'savings'],
+          account_subtypes: [DepositoryAccountSubtype.Checking, DepositoryAccountSubtype.Savings],
         },
       },
     })
