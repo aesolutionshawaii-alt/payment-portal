@@ -23,6 +23,11 @@ export async function GET() {
       country_codes: [CountryCode.Us],
       language: 'en',
       redirect_uri: process.env.NEXT_PUBLIC_APP_URL,
+      account_filters: {
+        depository: {
+          account_subtypes: ['checking', 'savings'],
+        },
+      },
     })
 
     return NextResponse.json({ link_token: response.data.link_token })
