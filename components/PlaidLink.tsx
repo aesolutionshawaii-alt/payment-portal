@@ -26,7 +26,16 @@ export default function PlaidLink({ onSuccess }: PlaidLinkProps) {
       })
         .then(res => res.json())
         .then(data => {
-          onSuccess(data.access_token)
+          if (data.access_token) {
+            onSuccess(data.access_token)
+          } else {
+            console.error('Token exchange failed:', data.error)
+            alert('Failed to link bank account. Please try again.')
+          }
+        })
+        .catch(err => {
+          console.error('Token exchange error:', err)
+          alert('Failed to link bank account. Please try again.')
         })
     },
   })
