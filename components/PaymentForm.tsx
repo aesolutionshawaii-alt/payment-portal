@@ -10,12 +10,14 @@ export interface PaymentFormProps {
   plaidToken: string
   paymentMethod?: 'bank' | 'card'
   onPaymentComplete?: () => void
+  accountId?: string
 }
 
 function PaymentFormContent({
   plaidToken,
   paymentMethod = 'bank',
   onPaymentComplete,
+  accountId,
 }: PaymentFormProps) {
   const [amount, setAmount] = useState('')
   const [loading, setLoading] = useState(false)
@@ -61,7 +63,7 @@ function PaymentFormContent({
         const response = await fetch('/api/payment/create', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ amount: parseFloat(amount), plaid_token: plaidToken }),
+          body: JSON.stringify({ amount: parseFloat(amount), plaid_token: plaidToken, account_id: accountId }),
         })
         const data = await response.json()
         if (!response.ok) throw new Error(data.error || 'Payment failed')
@@ -153,6 +155,7 @@ export default function PaymentForm(props: PaymentFormProps) {
         plaidToken={props.plaidToken}
         paymentMethod={props.paymentMethod ?? 'bank'}
         onPaymentComplete={props.onPaymentComplete}
+        accountId={props.accountId}
       />
     </Elements>
   )

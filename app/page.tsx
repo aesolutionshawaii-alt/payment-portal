@@ -6,17 +6,56 @@ import PaymentForm from '@/components/PaymentForm'
 import PaymentHistory from '@/components/PaymentHistory'
 import PlaidLink from '@/components/PlaidLink'
 
+interface BankAccount {
+  id: string
+  name: string
+  mask: string
+  type: string
+  balance: number | null
+}
+
 export default function Home() {
   const [bankLinked, setBankLinked] = useState(false)
   const [accessToken, setAccessToken] = useState('')
   const [paymentMethod, setPaymentMethod] = useState<'bank' | 'card'>('bank')
   const [oauthRedirectUri, setOauthRedirectUri] = useState<string | null>(null)
+  const [accounts, setAccounts] = useState<BankAccount[]>([])
+  const [selectedAccountId, setSelectedAccountId] = useState<string>('')
+  const [loadingAccounts, setLoadingAccounts] = useState(false)
+
+  // Fetch accounts when we have an access token
+  const fetchAccounts = async (token: string) => {
+    setLoadingAccounts(true)
+    try {
+      const res = await fetch('/api/plaid/get-accounts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ access_token: token }),
+      })
+      const data = await res.json()
+      if (data.accounts && data.accounts.length > 0) {
+        setAccounts(data.accounts)
+        // Use saved account or default to first
+        const savedAccountId = localStorage.getItem('selected_account_id')
+        if (savedAccountId && data.accounts.find((a: BankAccount) => a.id === savedAccountId)) {
+          setSelectedAccountId(savedAccountId)
+        } else {
+          setSelectedAccountId(data.accounts[0].id)
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching accounts:', err)
+    } finally {
+      setLoadingAccounts(false)
+    }
+  }
 
   useEffect(() => {
     const token = localStorage.getItem('plaid_access_token')
     if (token) {
       setAccessToken(token)
       setBankLinked(true)
+      fetchAccounts(token)
     }
 
     // Check for OAuth redirect (user returning from bank authentication)
@@ -33,6 +72,23 @@ export default function Home() {
     localStorage.setItem('plaid_access_token', token)
     setAccessToken(token)
     setBankLinked(true)
+    fetchAccounts(token)
+  }
+
+  const handleChangeBank = () => {
+    // Clear stored tokens to force re-linking
+    localStorage.removeItem('plaid_access_token')
+    localStorage.removeItem('plaid_link_token')
+    localStorage.removeItem('selected_account_id')
+    setAccessToken('')
+    setBankLinked(false)
+    setAccounts([])
+    setSelectedAccountId('')
+  }
+
+  const handleAccountChange = (accountId: string) => {
+    setSelectedAccountId(accountId)
+    localStorage.setItem('selected_account_id', accountId)
   }
 
   return (
@@ -102,9 +158,43 @@ export default function Home() {
                     </div>
                   )}
 
-                  <PaymentForm 
-                    plaidToken={accessToken} 
+                  {paymentMethod === 'bank' && bankLinked && accounts.length > 0 && (
+                    <div className="mb-8 p-4 bg-white/5 border border-white/10 rounded-lg">
+                      <div className="flex justify-between items-center mb-3">
+                        <label className="text-gray-400 text-sm font-medium uppercase tracking-wider">
+                          Pay From
+                        </label>
+                        <button
+                          onClick={handleChangeBank}
+                          className="text-blue-400 text-sm hover:text-blue-300 transition-colors"
+                        >
+                          Change Bank
+                        </button>
+                      </div>
+                      <select
+                        value={selectedAccountId}
+                        onChange={(e) => handleAccountChange(e.target.value)}
+                        className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-white/50 transition-all"
+                      >
+                        {accounts.map((account) => (
+                          <option key={account.id} value={account.id} className="bg-gray-900">
+                            {account.name} (****{account.mask}) - {account.type}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  {paymentMethod === 'bank' && bankLinked && loadingAccounts && (
+                    <div className="mb-8 p-4 bg-white/5 border border-white/10 rounded-lg">
+                      <p className="text-gray-400 text-sm">Loading accounts...</p>
+                    </div>
+                  )}
+
+                  <PaymentForm
+                    plaidToken={accessToken}
                     paymentMethod={paymentMethod}
+                    accountId={selectedAccountId}
                   />
                 </>
               )}

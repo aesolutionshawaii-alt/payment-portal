@@ -5,7 +5,7 @@ import { Configuration, PlaidApi, PlaidEnvironments } from 'plaid'
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
 
 const plaidConfig = new Configuration({
-  basePath: PlaidEnvironments.production,
+  basePath: PlaidEnvironments[process.env.NEXT_PUBLIC_PLAID_ENV as 'sandbox' | 'production'],
   baseOptions: {
     headers: {
       'PLAID-CLIENT-ID': process.env.PLAID_CLIENT_ID!,
@@ -18,7 +18,7 @@ const plaidClient = new PlaidApi(plaidConfig)
 
 export async function POST(request: NextRequest) {
   try {
-    const { amount, plaid_token } = await request.json()
+    const { amount, plaid_token, account_id } = await request.json()
 
     if (!amount || amount <= 0) {
       return NextResponse.json(
@@ -34,9 +34,14 @@ export async function POST(request: NextRequest) {
       access_token: plaid_token,
     })
 
-    const account = authResponse.data.accounts[0]
-    const accountNumber = authResponse.data.numbers.ach[0].account
-    const routingNumber = authResponse.data.numbers.ach[0].routing
+    // Use specified account or fall back to first account
+    const account = account_id
+      ? authResponse.data.accounts.find(a => a.account_id === account_id) || authResponse.data.accounts[0]
+      : authResponse.data.accounts[0]
+
+    const achNumbers = authResponse.data.numbers.ach.find(a => a.account_id === account.account_id) || authResponse.data.numbers.ach[0]
+    const accountNumber = achNumbers.account
+    const routingNumber = achNumbers.routing
 
     console.log('Retrieved bank account from Plaid')
 
